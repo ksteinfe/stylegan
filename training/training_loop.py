@@ -214,6 +214,7 @@ def training_loop(
     tick_start_nimg = cur_nimg
     prev_lod = -1.0
     while cur_nimg < total_kimg * 1000:
+        print("tick\tcur_nimg:{}\tcur_tick:{}".format(cur_nimg, cur_tick))
         if ctx.should_stop(): break
 
         # Choose training parameters and configure training ops.
@@ -256,6 +257,7 @@ def training_loop(
 
             # Save snapshots.
             if cur_tick % image_snapshot_ticks == 0 or done:
+                print("...saving image snapshot")
                 grid_fakes = Gs.run(grid_latents, grid_labels, is_validation=True, minibatch_size=sched.minibatch//submit_config.num_gpus)
                 misc.save_image_grid(grid_fakes, os.path.join(submit_config.run_dir, 'fakes%06d.png' % (cur_nimg // 1000)), drange=drange_net, grid_size=grid_size)
             if cur_tick % network_snapshot_ticks == 0 or done or cur_tick == 1:
