@@ -76,6 +76,7 @@ class TFRecordExporter:
             for lod in range(self.resolution_log2 - 1):
                 tfr_file = self.tfr_prefix + '-r%02d.tfrecords' % (self.resolution_log2 - lod)
                 self.tfr_writers.append(tf.python_io.TFRecordWriter(tfr_file, tfr_opt))
+
         assert img.shape == self.shape
         for lod, tfr_writer in enumerate(self.tfr_writers):
             if lod:
@@ -500,13 +501,22 @@ def create_celeba(tfrecord_dir, celeba_dir, cx=89, cy=121):
 
 #----------------------------------------------------------------------------
 
+#ksteinfe
+FORCE_SIZE = 512
+
 def create_from_images(tfrecord_dir, image_dir, shuffle):
     print('Loading images from "%s"' % image_dir)
     image_filenames = sorted(glob.glob(os.path.join(image_dir, '*')))
     if len(image_filenames) == 0:
         error('No input images found')
 
-    img = np.asarray(PIL.Image.open(image_filenames[0]))
+    #ksteinfe
+    pimg = PIL.Image.open(image_filenames[0])
+    pimg = pimg.resize((FORCE_SIZE,FORCE_SIZE), PIL.Image.ANTIALIAS)
+    pimg_size = pimg.size
+    print("first image has been resized to {}. i will do the same for all others if need be.".format(pimg_size))
+
+    img = np.asarray(pimg)
     resolution = img.shape[0]
     channels = img.shape[2] if img.ndim == 3 else 1
     if img.shape[1] != resolution:
@@ -519,7 +529,13 @@ def create_from_images(tfrecord_dir, image_dir, shuffle):
     with TFRecordExporter(tfrecord_dir, len(image_filenames)) as tfr:
         order = tfr.choose_shuffled_order() if shuffle else np.arange(len(image_filenames))
         for idx in range(order.size):
-            img = np.asarray(PIL.Image.open(image_filenames[order[idx]]))
+            #ksteinfe
+            pimg = PIL.Image.open(image_filenames[order[idx]])
+            #print(pimg.size)
+            if (pimg.size != pimg_size):
+                pimg = pimg.resize((FORCE_SIZE,FORCE_SIZE), PIL.Image.ANTIALIAS)
+
+            img = np.asarray(pimg)
             if channels == 1:
                 img = img[np.newaxis, :, :] # HW => CHW
             else:
