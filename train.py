@@ -98,6 +98,10 @@ if 0:
     submit_config = dnnlib.SubmitConfig()                                          # Options for dnnlib.submit_run().
     tf_config     = {'rnd.np_random_seed': 1000}                                   # Options for tflib.init_tf().
 
+    # ksteinfe
+    #sched.tick_kimg_base          = 80  #160    # Default interval of progress snapshots.
+    #sched.tick_kimg_dict          = {4: 40, 8:20, 16:20, 32:20, 64:20, 128:20, 256:20, 512:20, 1024:20}# {4: 160, 8:140, 16:120, 32:100, 64:80, 128:60, 256:40, 512:30, 1024:20} # Resolution-specific overrides.    
+
     # Dataset (choose one).
     desc += '-celebahq';            dataset = EasyDict(tfrecord_dir='celebahq'); train.mirror_augment = True
     #desc += '-celeba';              dataset = EasyDict(tfrecord_dir='celeba'); train.mirror_augment = True

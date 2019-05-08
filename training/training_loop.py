@@ -214,7 +214,7 @@ def training_loop(
     tick_start_nimg = cur_nimg
     prev_lod = -1.0
     while cur_nimg < total_kimg * 1000:
-        print("tick\tcur_nimg:{}\tcur_tick:{}".format(cur_nimg, cur_tick))
+        print("tick\tcur_nimg:{}\tcur_tick:{}\tsched.tick_kimg:{}".format(cur_nimg, cur_tick, sched.tick_kimg))
         if ctx.should_stop(): break
 
         # Choose training parameters and configure training ops.
