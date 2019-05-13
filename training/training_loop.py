@@ -69,6 +69,8 @@ def training_schedule(
     lrate_rampup_kimg       = 0,        # Duration of learning rate ramp-up.
     tick_kimg_base          = 160,      # Default interval of progress snapshots.
     tick_kimg_dict          = {4: 160, 8:140, 16:120, 32:100, 64:80, 128:60, 256:40, 512:30, 1024:20}): # Resolution-specific overrides.
+    #tick_kimg_dict          = {4: 80, 8:70, 16:60, 32:50, 64:40, 128:30, 256:20, 512:15, 1024:10}): # Resolution-specific overrides.
+    #tick_kimg_dict          = {4: 4, 8:4, 16:4 }): # Resolution-specific overrides.
 
     # Initialize result dict.
     s = dnnlib.EasyDict()
@@ -214,7 +216,7 @@ def training_loop(
     tick_start_nimg = cur_nimg
     prev_lod = -1.0
     while cur_nimg < total_kimg * 1000:
-        print("tick\tcur_nimg:{}\tcur_tick:{}\tsched.tick_kimg:{}".format(cur_nimg, cur_tick, sched.tick_kimg))
+        print("{:0.2f}k / {:0.2f}k / {:0.2f}k   {}k per tick".format(cur_nimg/1000.0, tick_start_nimg/1000.0 + sched.tick_kimg, total_kimg, sched.tick_kimg), end='\r')
         if ctx.should_stop(): break
 
         # Choose training parameters and configure training ops.
@@ -235,6 +237,7 @@ def training_loop(
         # Perform maintenance tasks once per tick.
         done = (cur_nimg >= total_kimg * 1000)
         if cur_nimg >= tick_start_nimg + sched.tick_kimg * 1000 or done:
+            print("")
             cur_tick += 1
             tick_kimg = (cur_nimg - tick_start_nimg) / 1000.0
             tick_start_nimg = cur_nimg
@@ -257,19 +260,23 @@ def training_loop(
 
             # Save snapshots.
             if cur_tick % image_snapshot_ticks == 0 or done:
-                print("...saving image snapshot")
+                #print("...saving image snapshot")
                 grid_fakes = Gs.run(grid_latents, grid_labels, is_validation=True, minibatch_size=sched.minibatch//submit_config.num_gpus)
                 misc.save_image_grid(grid_fakes, os.path.join(submit_config.run_dir, 'fakes%06d.png' % (cur_nimg // 1000)), drange=drange_net, grid_size=grid_size)
             if cur_tick % network_snapshot_ticks == 0 or done or cur_tick == 1:
+                print("...saving network snapshot")
                 pkl = os.path.join(submit_config.run_dir, 'network-snapshot-%06d.pkl' % (cur_nimg // 1000))
                 misc.save_pkl((G, D, Gs), pkl)
+                print("...running metrics")
                 metrics.run(pkl, run_dir=submit_config.run_dir, num_gpus=submit_config.num_gpus, tf_config=tf_config)
 
             # Update summaries and RunContext.
+            #print("...updating summaries and RunContext")
             metrics.update_autosummaries()
             tflib.autosummary.save_summaries(summary_log, cur_nimg)
             ctx.update('%.2f' % sched.lod, cur_epoch=cur_nimg // 1000, max_epoch=total_kimg)
             maintenance_time = ctx.get_last_update_interval() - tick_time
+            if int(maintenance_time) > 0: print("maintenance_time:{}s".format(int(maintenance_time)))
 
     # Write final results.
     misc.save_pkl((G, D, Gs), os.path.join(submit_config.run_dir, 'network-final.pkl'))

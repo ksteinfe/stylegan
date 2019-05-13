@@ -60,6 +60,7 @@ def run_all_snapshots(submit_config, metric_args, run_id):
 #----------------------------------------------------------------------------
 
 def main():
+    print("run_metrics.py main()")
     submit_config = dnnlib.SubmitConfig()
 
     # Which metrics to evaluate?

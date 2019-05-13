@@ -22,6 +22,7 @@ import dnnlib.tflib as tflib
 
 from training import dataset
 
+
 #----------------------------------------------------------------------------
 
 def error(msg):
@@ -501,10 +502,9 @@ def create_celeba(tfrecord_dir, celeba_dir, cx=89, cy=121):
 
 #----------------------------------------------------------------------------
 
-#ksteinfe
-FORCE_SIZE = 512
 
-def create_from_images(tfrecord_dir, image_dir, shuffle):
+
+def create_from_images(tfrecord_dir, image_dir, shuffle, resize_to):
     print('Loading images from "%s"' % image_dir)
     image_filenames = sorted(glob.glob(os.path.join(image_dir, '*')))
     if len(image_filenames) == 0:
@@ -512,9 +512,14 @@ def create_from_images(tfrecord_dir, image_dir, shuffle):
 
     #ksteinfe
     pimg = PIL.Image.open(image_filenames[0])
-    pimg = pimg.resize((FORCE_SIZE,FORCE_SIZE), PIL.Image.ANTIALIAS)
-    pimg_size = pimg.size
-    print("first image has been resized to {}. i will do the same for all others if need be.".format(pimg_size))
+
+    if resize_to:
+        pimg = pimg.resize((resize_to,resize_to), PIL.Image.ANTIALIAS)
+        pimg_size = pimg.size
+        print("first image has been resized to {}. i will do the same for all others if need be.".format(pimg_size))
+    else:
+        pimg_size = pimg.size
+        print("first image is {}. i expect all others will be too.".format(pimg_size))
 
     img = np.asarray(pimg)
     resolution = img.shape[0]
@@ -532,8 +537,8 @@ def create_from_images(tfrecord_dir, image_dir, shuffle):
             #ksteinfe
             pimg = PIL.Image.open(image_filenames[order[idx]])
             #print(pimg.size)
-            if (pimg.size != pimg_size):
-                pimg = pimg.resize((FORCE_SIZE,FORCE_SIZE), PIL.Image.ANTIALIAS)
+            if resize_to and pimg.size != pimg_size:
+                pimg = pimg.resize((resize_to,resize_to), PIL.Image.ANTIALIAS)
 
             img = np.asarray(pimg)
             if channels == 1:
@@ -640,6 +645,7 @@ def execute_cmdline(argv):
                                             'create_from_images datasets/mydataset myimagedir')
     p.add_argument(     'tfrecord_dir',     help='New dataset directory to be created')
     p.add_argument(     'image_dir',        help='Directory containing the images')
+    p.add_argument(     '--resize_to',      help='ksteinfe. resolution to resize to. Defults to no resize', type=int, default=0)
     p.add_argument(     '--shuffle',        help='Randomize image order (default: 1)', type=int, default=1)
 
     p = add_command(    'create_from_hdf5', 'Create dataset from legacy HDF5 archive.',
